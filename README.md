@@ -1,0 +1,1 @@
+personal auto install script

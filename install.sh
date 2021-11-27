@@ -26,6 +26,7 @@ echo -e "installing default packages"
 # install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator
 # shell utilities
 # editors
+# man pages
 # archive management
 # encryption
 # system utilities
@@ -36,13 +37,14 @@ echo -e "installing default packages"
 # miscellaneous
 
 apt-get install --no-install-recommends -m -y --show-progress \
-tree tmux curl \
-vim vim-runtime \
+bash-completion tree tmux curl wget \
+vim vim-common vim-runtime \
+man-db \
 unzip \
 gnupg2 pgpdump \
-psmisc sysstat iotop time \
+procps psmisc sysstat iotop time \
 net-tools nmap iftop \
-apt-rdepends \
+lsb_release apt-rdepends \
 shellcheck \
 ca-certificates jq \
 cowsay cowsay-off display-dhammapada steghide
