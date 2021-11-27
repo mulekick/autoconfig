@@ -44,7 +44,7 @@ unzip \
 gnupg2 pgpdump \
 procps psmisc sysstat iotop time \
 net-tools nmap iftop \
-lsb_release apt-rdepends \
+lsb-release apt-rdepends \
 shellcheck \
 ca-certificates jq \
 cowsay cowsay-off display-dhammapada steghide
