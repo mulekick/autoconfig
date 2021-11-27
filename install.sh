@@ -15,7 +15,7 @@ USER_PASSWD=$(pwd)/tarball/user-password
 USER_SHELL=/bin/bash
 
 # encrypted files storage
-GPG_TARBALL=$(pwd)/$USER_NAME.tar.gpg
+GPG_TARBALL=$(pwd)/tarball.tar.gpg
 
 # default apt sources are configured at installation, update and upgrade
 apt-get update && apt-get upgrade

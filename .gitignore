@@ -1,2 +1,5 @@
 # exclude tarball directory
 /tarball
+
+# exclude tar file
+/tarball.tar
