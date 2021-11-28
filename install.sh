@@ -143,7 +143,7 @@ echo -e "configuring shell"
 update-alternatives --remove editor /bin/nano
 
 # remove nano, period
-apt-get purge nano
+apt-get purge -y nano
 
 # set vim.basic as an editor alternative
 [[ -x /usr/bin/vim.basic ]] && update-alternatives --set editor /usr/bin/vim.basic
@@ -212,7 +212,7 @@ ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$u
 # ===================== MULTIMEDIA =========================
 
 # install ffmpeg
-apt-get install ffmpeg
+apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 
 # clone megadownload
 # add alias to .bashrc
