@@ -28,6 +28,7 @@ echo -e "installing default packages"
 # editors
 # man pages
 # archive management
+# policy management
 # encryption
 # system utilities
 # network utilities
@@ -41,6 +42,7 @@ bash-completion tree tmux curl wget \
 vim vim-common vim-runtime \
 man-db \
 unzip \
+policykit-1 \
 gnupg2 pgpdump \
 procps psmisc sysstat iotop time \
 net-tools nmap iftop \
@@ -155,6 +157,9 @@ apt-get update
 # install docker packages
 apt-get install --no-install-recommends -m -y --show-progress docker-ce docker-ce-cli containerd.io
 
+# add user to group
+usermod -a -G docker "$username"
+
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
 
@@ -187,4 +192,17 @@ export NODE_PATH=\"$NVM_INC/../../lib/node_modules\"'
 
 [[ -f "$userhome/.bashrc" ]] && echo -e "$GLOBAL_MODULES_PATH"  >> "$userhome/.bashrc"
 
+# install global modules and create symlink to folder 
+# shellcheck disable=SC2016
+runuser -c '. .nvm/nvm.sh && \
+npm install -g ascii-table chalk eslint eslint-plugin-html js-beautify && \
+ln -s $NVM_INC/../../lib/node_modules ~/node.globals' -P --login "$username"
+
+# ====================== CLEANUP ===========================
+echo -e "removing installation files"
+
+# remove local repo
+rm -rf "$(pwd)/autoconfig"
+
+# ======================== DONE ============================
 echo -e "installation complete."
