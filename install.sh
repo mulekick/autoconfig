@@ -218,7 +218,9 @@ apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 # add alias to .bashrc
 # shellcheck disable=SC2016
 runuser -c 'mkdir -pv git/megadownload && \
-git clone git@github.com:mulekick/megadownload.git git/megadownload && \
+cd git/megadownload && \
+git clone git@github.com:mulekick/megadownload.git . && \
+npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\''  >> "$HOME/.bashrc"' -P --login "$username"
 
 # ====================== CLEANUP ===========================
