@@ -2,20 +2,28 @@
 
 # set up a freshly installed host in local-debian current condition (git is present)
 
+# current directory
+autoconfig=$(pwd)
+
+if [[ ! -x "$autoconfig/$0" ]]; then
+        echo "Please run this script from the install directory."
+        exit 1
+fi
+
 # script is meant to be run as root
-if [ "$(id -u)" != "0" ]; then
+if [[ "$(id -u)" != "0" ]]; then
         echo "Please run this script using sudo."
         exit 1
 fi
 
 # avoid confusion with built in shell variables
-USER_NAME=$(pwd)/user-name
-USER_GECOS=$(pwd)/user-gecos
-USER_PASSWD=$(pwd)/user-password
+USER_NAME=$autoconfig/user-name
+USER_GECOS=$autoconfig/user-gecos
+USER_PASSWD=$autoconfig/user-password
 USER_SHELL=/bin/bash
 
 # encrypted files storage
-GPG_TARBALL=$(pwd)/tarball.tar.gpg
+GPG_TARBALL=$autoconfig/tarball.tar.gpg
 
 # default apt sources are configured at installation, update and upgrade
 apt-get update && apt-get upgrade
@@ -134,6 +142,9 @@ echo -e "configuring shell"
 # remove nano as an editor alternative
 update-alternatives --remove editor /bin/nano
 
+# remove nano, period
+apt-get purge nano
+
 # set vim.basic as an editor alternative
 [[ -x /usr/bin/vim.basic ]] && update-alternatives --set editor /usr/bin/vim.basic
 
@@ -167,7 +178,7 @@ echo -e "configuring systemd"
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
 
 # copy docker configuration unit
-cp -v "$(pwd)/docker.target" /lib/systemd/system/.
+cp -v "$autoconfig/docker.target" /lib/systemd/system/.
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -190,19 +201,31 @@ GLOBAL_MODULES_PATH='\n
 # export npm global modules path\n
 export NODE_PATH=\"$NVM_INC/../../lib/node_modules\"'
 
-[[ -f "$userhome/.bashrc" ]] && echo -e "$GLOBAL_MODULES_PATH"  >> "$userhome/.bashrc"
+[[ -f "$userhome/.bashrc" ]] && echo -e "$GLOBAL_MODULES_PATH" >> "$userhome/.bashrc"
 
 # install global modules and create symlink to folder 
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
 npm install -g ascii-table chalk eslint eslint-plugin-html js-beautify && \
-ln -s $NVM_INC/../../lib/node_modules ~/node.globals' -P --login "$username"
+ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
+
+# ===================== MULTIMEDIA =========================
+
+# install ffmpeg
+apt-get install ffmpeg
+
+# clone megadownload
+# add alias to .bashrc
+# shellcheck disable=SC2016
+runuser -c 'mkdir -pv git/megadownload && \
+git clone git@github.com:mulekick/megadownload.git git/megadownload && \
+echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\''  >> "$HOME/.bashrc"' -P --login "$username"
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
 
 # remove local repo
-rm -rf "$(pwd)/autoconfig"
+cd .. && rm -rf "$autoconfig"
 
 # ======================== DONE ============================
 echo -e "installation complete."
