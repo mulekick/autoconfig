@@ -9,9 +9,9 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # avoid confusion with built in shell variables
-USER_NAME=$(pwd)/tarball/user-name
-USER_GECOS=$(pwd)/tarball/user-gecos
-USER_PASSWD=$(pwd)/tarball/user-password
+USER_NAME=$(pwd)/user-name
+USER_GECOS=$(pwd)/user-gecos
+USER_PASSWD=$(pwd)/user-password
 USER_SHELL=/bin/bash
 
 # encrypted files storage
