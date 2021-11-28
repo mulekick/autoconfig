@@ -46,7 +46,7 @@ echo -e "installing default packages"
 # miscellaneous
 
 apt-get install --no-install-recommends -m -y --show-progress \
-bash-completion tree tmux curl wget \
+bash-completion tree tmux curl wget dos2unix \
 vim vim-common vim-runtime \
 man-db \
 unzip \
@@ -185,6 +185,9 @@ systemctl daemon-reload
 
 # enable docker configuration unit, create symlinks
 systemctl enable docker.target
+
+# set default system target
+systemctl set-default multi-user.target
 
 # =================== SETUP NODE.JS ========================
 echo -e "installing node.js"
