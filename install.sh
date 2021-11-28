@@ -153,7 +153,7 @@ https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/a
 apt-get update
 
 # install docker packages
-apt-get --no-install-recommends -m -y --show-progress docker-ce docker-ce-cli containerd.io
+apt-get install --no-install-recommends -m -y --show-progress docker-ce docker-ce-cli containerd.io
 
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
