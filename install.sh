@@ -217,7 +217,8 @@ apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 # clone megadownload
 # add alias to .bashrc
 # shellcheck disable=SC2016
-runuser -c 'mkdir -pv git/megadownload && \
+runuser -c '. .nvm/nvm.sh && \
+mkdir -pv git/megadownload && \
 cd git/megadownload && \
 git clone git@github.com:mulekick/megadownload.git . && \
 npm install && \
