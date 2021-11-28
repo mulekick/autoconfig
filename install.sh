@@ -104,6 +104,9 @@ if [[ ! -f "$userhome/.vimrc" ]]; then
     cp "$userhome/.shell_extend/.vimrc_default" "$userhome/.vimrc"
 fi
 
+# setup ownership
+chown -R "$username":"$username" "$userhome/.ssh" "$userhome/.vimrc"
+
 # ================= SETUP /etc/skel ========================
 echo -e "setting up default user directory"
 
@@ -139,7 +142,7 @@ update-alternatives --auto editor
 echo -e "installing docker"
 
 # retrieve docker gpg key
-curl -fsSL 'https://download.docker.com/linux/debian/gpg' | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+curl -fsSL 'https://download.docker.com/linux/debian/gpg' | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
 # add apt source
 echo \
