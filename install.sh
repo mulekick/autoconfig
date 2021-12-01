@@ -90,6 +90,7 @@ chown -R "$username":"$username" "$userhome/.ssh"
 
 # setup permissions
 chmod 700 "$userhome/.ssh"
+chmod 600 "$userhome/.ssh/*"
 
 # ================== SETUP $HOME ===========================
 echo -e "setting up $userhome"
@@ -115,7 +116,8 @@ if [[ ! -f "$userhome/.vimrc" ]]; then
 fi
 
 # setup ownership
-chown -R "$username":"$username" "$userhome/.ssh" "$userhome/.vimrc"
+chown -R "$username":"$username" "$userhome/.vimrc"
+chmod 600 "$userhome/.vimrc/*"
 
 # ================= SETUP /etc/skel ========================
 echo -e "setting up default user directory"
@@ -175,10 +177,7 @@ usermod -a -G docker "$username"
 echo -e "configuring systemd"
 
 # decrypt and uncompress into current directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
-
-# copy docker configuration unit
-cp -v "$autoconfig/docker.target" /lib/systemd/system/.
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system/. --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
 
 # rebuild dependency tree
 systemctl daemon-reload
