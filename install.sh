@@ -176,11 +176,17 @@ apt-get install --no-install-recommends -m -y --show-progress docker-ce docker-c
 # add user to group
 usermod -a -G docker "$username"
 
+# disable docker auto start
+systemctl disable docker.service
+
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
 
 # decrypt and uncompress into systemd directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
+
+# setup ownership
+chown root:root /lib/systemd/system/docker.target
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -256,6 +262,9 @@ systemctl isolate multi-user.target
 
 # decrypt and uncompress into systemd directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/data-viewer.service"
+
+# setup ownership
+chown root:root /etc/systemd/system/data-viewer.service
 
 # rebuild dependency tree
 systemctl daemon-reload
