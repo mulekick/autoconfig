@@ -177,7 +177,7 @@ apt-get install --no-install-recommends -m -y --show-progress docker-ce docker-c
 usermod -a -G docker "$username"
 
 # disable docker auto start
-systemctl disable docker.service
+systemctl disable docker.service docker.socket containerd.service
 
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
@@ -238,7 +238,7 @@ apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 runuser -c '. .nvm/nvm.sh && \
 cd git/megadownload && \
 npm install && \
-echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\''  >> "$HOME/.bashrc"' -P --login "$username"
+echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
