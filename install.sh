@@ -118,6 +118,8 @@ fi
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/.vimrc"
+
+# setup permissions
 chmod 600 "$userhome/.vimrc/*"
 
 # ================= SETUP /etc/skel ========================
@@ -233,10 +235,13 @@ npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\''  >> "$HOME/.bashrc"' -P --login "$username"
 
 # ==================== DATA-VIEWER =========================
-echo -e "setup data viewer service"
+echo -e "setting up data viewer service"
 
 # decrypt and uncompress into repo
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=1 -xvf /dev/stdin "tarball/export-wsl2.tar"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/export-debian.tar" "tarball/app/*"
+
+# setup ownership
+chown -R "$username":"$username" "$userhome/git/data-viewer"
 
 # start docker
 systemctl isolate rundocker.target 
