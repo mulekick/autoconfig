@@ -217,7 +217,7 @@ echo -e "cloning git repositories"
 
 # clone repositories
 # shellcheck disable=SC2016
-xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv $1 && git clone $0 $1' -P --login "$username"
+xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv ~/$1 && git clone $0 ~/$1' -P --login "$username"
 
 # ===================== MULTIMEDIA =========================
 echo -e "setting up multimedia tools"
