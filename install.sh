@@ -20,6 +20,7 @@ fi
 USER_NAME=$autoconfig/user-name
 USER_GECOS=$autoconfig/user-gecos
 USER_PASSWD=$autoconfig/user-password
+USER_REPOS=$autoconfig/user-repositories
 USER_SHELL=/bin/bash
 
 # encrypted files storage
@@ -176,8 +177,8 @@ usermod -a -G docker "$username"
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
 
-# decrypt and uncompress into current directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system/. --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
+# decrypt and uncompress into systemd directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -211,20 +212,47 @@ runuser -c '. .nvm/nvm.sh && \
 npm install -g ascii-table chalk eslint eslint-plugin-html js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
+# =================== SETUP GIT REPOS ======================
+echo -e "cloning git repositories"
+
+# clone repositories
+# shellcheck disable=SC2016
+xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv $1 && git clone $0 $1' -P --login "$username"
+
 # ===================== MULTIMEDIA =========================
+echo -e "setting up multimedia tools"
 
 # install ffmpeg
 apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 
-# clone megadownload
-# add alias to .bashrc
+# setup megadownload and add alias to .bashrc
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
-mkdir -pv git/megadownload && \
 cd git/megadownload && \
-git clone git@github.com:mulekick/megadownload.git . && \
 npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\''  >> "$HOME/.bashrc"' -P --login "$username"
+
+# ==================== DATA-VIEWER =========================
+echo -e "setup data viewer service"
+
+# decrypt and uncompress into repo
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=1 -xvf /dev/stdin "tarball/export-wsl2.tar"
+
+# start docker
+systemctl isolate rundocker.target 
+
+# run install script
+# shellcheck disable=SC2016
+runuser -c '. ~/git/data-viewer/data-viewer-install.sh' -P --login "$username"
+
+# stop docker
+systemctl isolate multi-user.target 
+
+# decrypt and uncompress into systemd directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/data-viewer.service"
+
+# rebuild dependency tree
+systemctl daemon-reload
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
