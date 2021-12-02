@@ -248,7 +248,8 @@ systemctl isolate rundocker.target
 
 # run install script
 # shellcheck disable=SC2016
-runuser -c '. ~/git/data-viewer/data-viewer-install.sh' -P --login "$username"
+runuser -c 'cd ~/git/data-viewer && 
+. data-viewer-install.sh' -P --login "$username"
 
 # stop docker
 systemctl isolate multi-user.target 
