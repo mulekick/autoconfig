@@ -240,11 +240,14 @@ cd git/megadownload && \
 npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
+# decrypt and uncompress into repo
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/megadownload" --strip-components=2 --wildcards -xvf /dev/stdin "tarball/megadownload/*"
+
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
 
 # decrypt and uncompress into repo
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/export-debian.tar" "tarball/app/*"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=2 --wildcards -xvf /dev/stdin "tarball/data-viewer/*"
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/git/data-viewer"
