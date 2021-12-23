@@ -227,6 +227,12 @@ echo -e "cloning git repositories"
 # shellcheck disable=SC2016
 xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv ~/$1 && git clone $0 ~/$1' -P --login "$username"
 
+# decrypt and uncompress into repos
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*"
+
+# setup ownership
+chown -R "$username":"$username" "$userhome/git"
+
 # ===================== MULTIMEDIA =========================
 echo -e "setting up multimedia tools"
 
@@ -240,17 +246,8 @@ cd git/megadownload && \
 npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
-# decrypt and uncompress into repo
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/megadownload" --strip-components=2 --wildcards -xvf /dev/stdin "tarball/megadownload/*"
-
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
-
-# decrypt and uncompress into repo
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/data-viewer" --strip-components=2 --wildcards -xvf /dev/stdin "tarball/data-viewer/*"
-
-# setup ownership
-chown -R "$username":"$username" "$userhome/git/data-viewer"
 
 # start docker
 systemctl isolate rundocker.target 
