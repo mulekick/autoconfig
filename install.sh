@@ -228,7 +228,7 @@ echo -e "cloning git repositories"
 xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv ~/$1 && git clone $0 ~/$1' -P --login "$username"
 
 # decrypt and uncompress into repos
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/git"
