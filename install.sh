@@ -231,7 +231,7 @@ xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv ~/$1 && git clone $0 ~/$
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
 
 # restore tarball source directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball/*"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/git"
