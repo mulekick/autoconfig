@@ -224,7 +224,11 @@ echo -e "cloning git repositories"
 
 # clone repositories
 # shellcheck disable=SC2016
-xargs -a "$USER_REPOS" -P 1 -tn 2 runuser -c 'mkdir -pv ~/$1 && git clone $0 ~/$1' -P --login "$username"
+xargs -a "$USER_REPOS" -P 1 -tn 4 runuser -c 'mkdir -pv ~/$1 && \
+git clone $0 ~/$1 && \
+cd ~/$1 && \
+git config user.email $2 && \
+git config user.name $3' -P --login "$username"
 
 # decrypt and uncompress into repos
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
