@@ -91,7 +91,6 @@ chown -R "$username":"$username" "$userhome/.ssh"
 
 # setup permissions
 chmod 700 "$userhome/.ssh"
-chmod 600 "$userhome/.ssh/*"
 
 # ================== SETUP $HOME ===========================
 echo -e "setting up $userhome"
@@ -120,7 +119,7 @@ fi
 chown -R "$username":"$username" "$userhome/.vimrc"
 
 # setup permissions
-chmod 600 "$userhome/.vimrc/*"
+chmod 600 "$userhome/.vimrc"
 
 # ================= SETUP /etc/skel ========================
 echo -e "setting up default user directory"
