@@ -109,9 +109,6 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/g
 # restore tarball source directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
 
-# setup ownership
-# chown -R "$username":"$username" "$userhome/git"
-
 # ================== SETUP $HOME ===========================
 echo -e "setting up $userhome"
 
@@ -133,10 +130,10 @@ if [[ ! -f "$userhome/.vimrc" ]]; then
 fi
 
 # setup ownership
-# chown -R "$username":"$username" "$userhome/.vimrc"
+chown -R "$username":"$username" "$userhome/.vimrc"
 
 # setup permissions
-# chmod 600 "$userhome/.vimrc"
+chmod 600 "$userhome/.vimrc"
 
 # ================= SETUP /etc/skel ========================
 echo -e "setting up default user directory"
@@ -202,7 +199,7 @@ echo -e "configuring systemd"
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
 
 # setup ownership
-# chown root:root /lib/systemd/system/docker.target
+chown root:root /lib/systemd/system/docker.target
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -267,7 +264,7 @@ systemctl isolate multi-user.target
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/data-viewer.service"
 
 # setup ownership
-# chown root:root /etc/systemd/system/data-viewer.service
+chown root:root /etc/systemd/system/data-viewer.service
 
 # rebuild dependency tree
 systemctl daemon-reload
