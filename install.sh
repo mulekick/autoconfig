@@ -92,6 +92,26 @@ chown -R "$username":"$username" "$userhome/.ssh"
 # setup permissions
 chmod 700 "$userhome/.ssh"
 
+# =================== SETUP GIT REPOS ======================
+echo -e "cloning git repositories"
+
+# clone repositories
+# shellcheck disable=SC2016
+xargs -a "$USER_REPOS" -P 1 -tn 4 runuser -c 'mkdir -pv ~/$1 && \
+git clone $0 ~/$1 && \
+cd ~/$1 && \
+git config user.email $2 && \
+git config user.name $3' -P --login "$username"
+
+# decrypt and uncompress into repos
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
+
+# restore tarball source directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
+
+# setup ownership
+# chown -R "$username":"$username" "$userhome/git"
+
 # ================== SETUP $HOME ===========================
 echo -e "setting up $userhome"
 
@@ -101,9 +121,6 @@ extendshell='\n
 if [[ -f $HOME/.shell_extend/.bash_extend ]]; then\n
 \t. $HOME/.shell_extend/.bash_extend\n
 fi'
-
-# clone github repo 
-runuser -c 'git clone git@github.com:mulekick/.shell_extend.git' -P --login "$username"
 
 # update .bashrc
 if [[ -f "$userhome/.bashrc" ]]; then
@@ -116,10 +133,10 @@ if [[ ! -f "$userhome/.vimrc" ]]; then
 fi
 
 # setup ownership
-chown -R "$username":"$username" "$userhome/.vimrc"
+# chown -R "$username":"$username" "$userhome/.vimrc"
 
 # setup permissions
-chmod 600 "$userhome/.vimrc"
+# chmod 600 "$userhome/.vimrc"
 
 # ================= SETUP /etc/skel ========================
 echo -e "setting up default user directory"
@@ -185,7 +202,7 @@ echo -e "configuring systemd"
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
 
 # setup ownership
-chown root:root /lib/systemd/system/docker.target
+# chown root:root /lib/systemd/system/docker.target
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -219,26 +236,6 @@ runuser -c '. .nvm/nvm.sh && \
 npm install -g ascii-table chalk eslint eslint-plugin-html js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
-# =================== SETUP GIT REPOS ======================
-echo -e "cloning git repositories"
-
-# clone repositories
-# shellcheck disable=SC2016
-xargs -a "$USER_REPOS" -P 1 -tn 4 runuser -c 'mkdir -pv ~/$1 && \
-git clone $0 ~/$1 && \
-cd ~/$1 && \
-git config user.email $2 && \
-git config user.name $3' -P --login "$username"
-
-# decrypt and uncompress into repos
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
-
-# restore tarball source directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
-
-# setup ownership
-chown -R "$username":"$username" "$userhome/git"
-
 # ===================== MULTIMEDIA =========================
 echo -e "setting up multimedia tools"
 
@@ -270,7 +267,7 @@ systemctl isolate multi-user.target
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/data-viewer.service"
 
 # setup ownership
-chown root:root /etc/systemd/system/data-viewer.service
+# chown root:root /etc/systemd/system/data-viewer.service
 
 # rebuild dependency tree
 systemctl daemon-reload
