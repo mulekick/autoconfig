@@ -154,6 +154,9 @@ if [[ ! -f /etc/skel/.vimrc ]]; then
     cp /etc/skel/.shell_extend/.vimrc_default /etc/skel/.vimrc
 fi
 
+# setup permissions
+chmod 600 /etc/skel/.vimrc
+
 # ================== CONFIGURE SHELL ======================== 
 echo -e "configuring shell"
 
