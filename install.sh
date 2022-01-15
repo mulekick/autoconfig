@@ -233,7 +233,10 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # install global modules and create symlink to folder 
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
-npm install -g ascii-table chalk eslint eslint-plugin-html js-beautify && \
+npm install -g \
+ascii-table@0.0.9 \
+chalk@4.1.0 \
+eslint eslint-plugin-html js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
 # ===================== MULTIMEDIA =========================
