@@ -226,7 +226,7 @@ runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$userna
 # shellcheck disable=SC2016
 GLOBAL_MODULES_PATH='\n
 # export npm global modules path\n
-export NODE_PATH=\"$NVM_INC/../../lib/node_modules\"'
+export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 
 [[ -f "$userhome/.bashrc" ]] && echo -e "$GLOBAL_MODULES_PATH" >> "$userhome/.bashrc"
 
