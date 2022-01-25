@@ -44,6 +44,7 @@ echo -e "installing default packages"
 # distro + packages management
 # shell linter
 # docker-relevant packages
+# windows network drives mapping
 # miscellaneous
 
 apt-get install --no-install-recommends -m -y --show-progress \
@@ -58,6 +59,7 @@ net-tools nmap iftop \
 lsb-release apt-rdepends \
 shellcheck \
 ca-certificates jq \
+samba-client samba-common cifs-utils \
 cowsay cowsay-off display-dhammapada steghide
 
 # ================= EXTRACT TARBALL ========================
@@ -68,7 +70,7 @@ read -r tarpp
 # decrypt and uncompress into current directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar --strip-components=1 --wildcards -xvf /dev/stdin "tarball/user-*"
 
-# =============== CREATE USER + SETUP SSH ==================
+# ==== CREATE USER + SETUP SSH/NETWORK MAPPINGS ============
 username=$(cat "$USER_NAME")
 userhome="/home/$username"
 
@@ -84,13 +86,13 @@ echo "$username:$(cat "$USER_PASSWD")" | chpasswd
 usermod -a -G sudo "$username"
 
 # decrypt and uncompress into user home directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.ssh"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.ssh" "tarball/.network-mappings"
 
 # setup ownership
-chown -R "$username":"$username" "$userhome/.ssh"
+chown -R "$username":"$username" "$userhome/.ssh" "$userhome/.network-mappings"
 
 # setup permissions
-chmod 700 "$userhome/.ssh"
+chmod 700 "$userhome/.ssh" "$userhome/.network-mappings"
 
 # =================== SETUP GIT REPOS ======================
 echo -e "cloning git repositories"
@@ -198,11 +200,12 @@ systemctl disable docker.service docker.socket containerd.service
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
 
-# decrypt and uncompress into systemd directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/docker.target"
+# decrypt and uncompress into systemd directories
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/docker.target"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/data-viewer.service" "tarball/systemd/network-drives.service"
 
 # setup ownership
-chown root:root /lib/systemd/system/docker.target
+chown root:root /lib/systemd/system/docker.target /etc/systemd/system/data-viewer.service /etc/systemd/system/network-drives.service
 
 # rebuild dependency tree
 systemctl daemon-reload
@@ -264,16 +267,7 @@ runuser -c 'cd ~/git/data-viewer &&
 . data-viewer-install.sh' -P --login "$username"
 
 # stop docker
-systemctl isolate multi-user.target 
-
-# decrypt and uncompress into systemd directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=1 -xvf /dev/stdin "tarball/data-viewer.service"
-
-# setup ownership
-chown root:root /etc/systemd/system/data-viewer.service
-
-# rebuild dependency tree
-systemctl daemon-reload
+systemctl isolate multi-user.target
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
