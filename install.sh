@@ -51,7 +51,7 @@ apt-get install --no-install-recommends -m -y --show-progress \
 bash-completion tree tmux curl wget dos2unix \
 vim vim-common vim-runtime \
 man-db \
-unzip \
+zip unzip \
 policykit-1 \
 gnupg2 pgpdump \
 procps psmisc sysstat iotop time \
