@@ -106,7 +106,7 @@ git config user.email $2 && \
 git config user.name $3' -P --login "$username"
 
 # decrypt and uncompress into repos
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*" "tarball/stream-cdn/*"
 
 # restore tarball source directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
@@ -225,6 +225,15 @@ runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/instal
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
 
+# decrypt and uncompress into user home directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
+
+# setup ownership
+chown "$username":"$username" "$userhome/.npmrc"
+
+# setup permissions
+chmod 600 "$userhome/.npmrc"
+
 # global modules management 
 # shellcheck disable=SC2016
 GLOBAL_MODULES_PATH='\n
@@ -263,7 +272,7 @@ systemctl isolate rundocker.target
 
 # run install script
 # shellcheck disable=SC2016
-runuser -c 'cd ~/git/data-viewer && 
+runuser -c 'cd ~/git/data-viewer && \
 . data-viewer-install.sh' -P --login "$username"
 
 # stop docker
