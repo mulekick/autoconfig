@@ -220,7 +220,7 @@ systemctl set-default multi-user.target
 echo -e "installing node.js"
 
 # setup nvm
-runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash' -P --login "$username"
+runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
@@ -246,7 +246,6 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
 npm install -g \
-ascii-table@0.0.9 \
 chalk@4.1.0 \
 eslint eslint-plugin-html js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
