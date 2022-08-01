@@ -246,7 +246,7 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
 npm install -g \
-chalk@4.1.0 \
+chalk \
 eslint eslint-plugin-html js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
