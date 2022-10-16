@@ -245,7 +245,7 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # install global modules and create symlink to folder 
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
-npm install -g eslint eslint-plugin-html js-beautify && \
+npm install -g eslint eslint-plugin-html eslint-plugin-node eslint-plugin-import js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
 # ===================== MULTIMEDIA =========================
