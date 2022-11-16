@@ -223,7 +223,8 @@ echo -e "installing node.js"
 runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
-runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
+# install v16.16.0 for megadownload/libcurl compatibility issue
+runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm && nvm install v16.16.0' -P --login "$username"
 
 # decrypt and uncompress into user home directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
@@ -258,8 +259,8 @@ apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
 cd git/megadownload && \
-npm install && \
-echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
+nvm exec v16.16.0 npm install && \
+echo '\''alias mdl=nvm exec v16.16.0 $HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
