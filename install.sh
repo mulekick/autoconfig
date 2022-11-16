@@ -260,7 +260,7 @@ apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 runuser -c '. .nvm/nvm.sh && \
 cd git/megadownload && \
 nvm exec v16.16.0 npm install && \
-echo '\''alias mdl=nvm exec v16.16.0 $HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
+echo '\''alias mdl="nvm exec v16.16.0 -- $HOME/git/megadownload/megadownload.js"'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
