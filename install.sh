@@ -32,7 +32,7 @@ apt-get update && apt-get upgrade
 # ================== INSTALL PACKAGES ======================
 echo -e "installing default packages"
 
-# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator
+# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
 # shell utilities
 # editors
 # man pages
@@ -45,6 +45,9 @@ echo -e "installing default packages"
 # shell linter
 # docker-relevant packages
 # windows network drives mapping
+# x window system
+# xfce
+# xrdp
 # miscellaneous
 
 apt-get install --no-install-recommends -m -y --show-progress \
@@ -60,6 +63,9 @@ lsb-release apt-rdepends \
 shellcheck \
 ca-certificates jq \
 samba-client samba-common cifs-utils \
+xorg dbus-x11 x11-xserver-utils \
+xfce4 xfce4-goodies \
+xrdp \
 cowsay cowsay-off display-dhammapada steghide
 
 # ================= EXTRACT TARBALL ========================
@@ -220,7 +226,7 @@ systemctl set-default multi-user.target
 echo -e "installing node.js"
 
 # setup nvm
-runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash' -P --login "$username"
+runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 # install v16.16.0 for megadownload/libcurl compatibility issue
@@ -274,6 +280,18 @@ runuser -c 'cd ~/git/data-viewer && \
 
 # stop docker
 systemctl isolate multi-user.target
+
+# ================ SETUP X.ORG / XRDP ======================
+echo -e "configuring xrdp and xorg"
+
+# add the xrdp user to the ssl-cert group
+adduser xrdp ssl-cert
+
+# setup custom config
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --strip-components=2 --overwrite -xvf /dev/stdin "tarball/xrdp/xrdp.ini" "tarball/xrdp/sesman.ini"
+
+# setup ownership
+chown root:root /etc/xrdp/xrdp.ini /etc/xrdp/sesman.ini
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
