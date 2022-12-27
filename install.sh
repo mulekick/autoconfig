@@ -27,7 +27,7 @@ USER_SHELL=/bin/bash
 GPG_TARBALL=$autoconfig/tarball.tar.gpg
 
 # default apt sources are configured at installation, update and upgrade
-apt-get update && apt-get upgrade
+apt-get update && apt-get upgrade -y
 
 # ================== INSTALL PACKAGES ======================
 echo -e "installing default packages"
@@ -45,9 +45,6 @@ echo -e "installing default packages"
 # shell linter
 # docker-relevant packages
 # windows network drives mapping
-# x window system
-# xfce
-# xrdp
 # miscellaneous
 
 apt-get install --no-install-recommends -m -y --show-progress \
@@ -63,9 +60,6 @@ lsb-release apt-rdepends \
 shellcheck \
 ca-certificates jq \
 samba-client samba-common cifs-utils \
-xorg dbus-x11 x11-xserver-utils \
-xfce4 xfce4-goodies \
-xrdp \
 cowsay cowsay-off display-dhammapada steghide
 
 # ================= EXTRACT TARBALL ========================
@@ -258,7 +252,8 @@ ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$u
 # ===================== MULTIMEDIA =========================
 echo -e "setting up multimedia tools"
 
-# install ffmpeg
+# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
+# ffmpeg
 apt-get install --no-install-recommends -m -y --show-progress ffmpeg
 
 # setup megadownload and add alias to .bashrc
@@ -267,6 +262,7 @@ runuser -c '. .nvm/nvm.sh && \
 cd git/megadownload && \
 npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
+
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
 
@@ -282,7 +278,16 @@ runuser -c 'cd ~/git/data-viewer && \
 systemctl isolate multi-user.target
 
 # ================ SETUP X.ORG / XRDP ======================
-echo -e "configuring xrdp and xorg"
+echo -e "setting up xrdp and xorg"
+
+# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
+# x
+# xfce
+# xrdp
+apt-get install --no-install-recommends -m -y --show-progress \
+xorg dbus-x11 x11-xserver-utils \
+xfce4 xfce4-goodies \
+xrdp xorgxrdp
 
 # add the xrdp user to the ssl-cert group
 adduser xrdp ssl-cert
@@ -292,6 +297,23 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --
 
 # setup ownership
 chown root:root /etc/xrdp/xrdp.ini /etc/xrdp/sesman.ini
+
+# =================== SETUP CHROME =========================
+echo -e "installing google chrome"
+
+# retrieve google gpg key
+curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -o /usr/share/keyrings/google-archive-keyring.gpg
+
+# add apt source
+echo \
+"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/google-archive-keyring.gpg] \
+deb http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+
+# update
+apt-get update
+
+# install chrome
+apt-get install --no-install-recommends -m -y --show-progress google-chrome-stable
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
