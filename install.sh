@@ -21,6 +21,7 @@ USER_NAME=$autoconfig/user-name
 USER_GECOS=$autoconfig/user-gecos
 USER_PASSWD=$autoconfig/user-password
 USER_REPOS=$autoconfig/user-repositories
+USER_EXTENSIONS=$autoconfig/user-extensions
 USER_SHELL=/bin/bash
 
 # encrypted files storage
@@ -318,8 +319,11 @@ apt-get install --no-install-recommends -m -y --show-progress google-chrome-stab
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
 
+# end message
+endmsg="installation complete.\ndon't forget to install the following extensions if using as a vscode remote:\n$(cat "$USER_EXTENSIONS")"
+
 # remove local repo
 cd .. && rm -rf "$autoconfig"
 
 # ======================== DONE ============================
-echo -e "installation complete."
+echo -e "$endmsg"
