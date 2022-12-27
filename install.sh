@@ -307,7 +307,7 @@ curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -
 # add apt source
 echo \
 "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/google-archive-keyring.gpg] \
-deb http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
 
 # update
 apt-get update
