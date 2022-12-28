@@ -33,7 +33,7 @@ apt-get update && apt-get upgrade -y
 # ================== INSTALL PACKAGES ======================
 echo -e "installing default packages"
 
-# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
+# install packages (only main dependencies, ignore missing, yes to all prompts)
 # shell utilities
 # editors
 # man pages
@@ -48,7 +48,7 @@ echo -e "installing default packages"
 # windows network drives mapping
 # miscellaneous
 
-apt-get install --no-install-recommends -m -y --show-progress \
+apt-get install --no-install-recommends -m -y \
 bash-completion tree tmux curl wget dos2unix \
 vim vim-common vim-runtime \
 man-db \
@@ -189,8 +189,10 @@ https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/a
 # update
 apt-get update
 
-# install docker packages
-apt-get install --no-install-recommends -m -y --show-progress docker-ce docker-ce-cli containerd.io
+# install packages (only main dependencies, ignore missing, yes to all prompts)
+# docker packages
+apt-get install --no-install-recommends -m -y \
+docker-ce docker-ce-cli containerd.io
 
 # add user to group
 usermod -a -G docker "$username"
@@ -253,9 +255,10 @@ ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$u
 # ===================== MULTIMEDIA =========================
 echo -e "setting up multimedia tools"
 
-# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
+# install packages (only main dependencies, ignore missing, yes to all prompts)
 # ffmpeg
-apt-get install --no-install-recommends -m -y --show-progress ffmpeg
+apt-get install --no-install-recommends -m -y \
+ffmpeg
 
 # setup megadownload and add alias to .bashrc
 # shellcheck disable=SC2016
@@ -285,7 +288,7 @@ echo -e "setting up xrdp and xorg"
 # x
 # xfce
 # xrdp
-apt-get install --no-install-recommends -m -y --show-progress \
+apt-get install --no-install-recommends -m -y \
 xorg dbus-x11 x11-xserver-utils \
 xfce4 xfce4-goodies \
 xrdp xorgxrdp
@@ -298,6 +301,46 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --
 
 # setup ownership
 chown root:root /etc/xrdp/xrdp.ini /etc/xrdp/sesman.ini
+
+# =============== SETUP AUDIO FOR XRDP =====================
+echo -e "building and installing xrdp audio module"
+
+# install packages (yes to all prompts)
+# module build dependencies
+# pulseaudio volume control
+apt-get install -y \
+build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot \
+pavucontrol
+
+# clone repo
+git clone https://github.com/neutrinolabs/pulseaudio-module-xrdp.git "$autoconfig/pulseaudio-module-xrdp"
+
+# cd into repo
+cd "$autoconfig/pulseaudio-module-xrdp" || exit 1
+
+# run build scripts
+./scripts/install_pulseaudio_sources_apt_wrapper.sh
+
+# move build directory
+mv ~/pulseaudio.src "$autoconfig/."
+
+# bootstrap and configure
+./bootstrap && ./configure PULSE_DIR="$autoconfig/pulseaudio.src"
+
+# make
+make
+
+# install
+make install
+
+# cd back into autoconfig directory
+cd ..
+
+# uninstall build dependencies
+# apt-get purge -y build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot
+
+# cleanup
+# apt-get autoremove
 
 # =================== SETUP CHROME =========================
 echo -e "installing google chrome"
@@ -313,8 +356,10 @@ http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.
 # update
 apt-get update
 
-# install chrome
-apt-get install --no-install-recommends -m -y --show-progress google-chrome-stable
+# install packages (only main dependencies, ignore missing, yes to all prompts)
+# chrome
+apt-get install --no-install-recommends -m -y \
+google-chrome-stable
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
