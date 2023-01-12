@@ -30,6 +30,13 @@ GPG_TARBALL=$autoconfig/tarball.tar.gpg
 # default apt sources are configured at installation, update and upgrade
 apt-get update && apt-get upgrade -y
 
+# =============== UPDATE KERNEL VARIABLES ==================
+echo -e "updating kernel variables"
+
+echo -e '\n
+# increase inotify max file watch limit
+fs.inotify.max_user_watches=262144' >> /etc/sysctl.conf
+
 # ================== INSTALL PACKAGES ======================
 echo -e "installing default packages"
 
@@ -266,6 +273,17 @@ runuser -c '. .nvm/nvm.sh && \
 cd git/megadownload && \
 npm install && \
 echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
+
+# install gifski
+wget -qO "$autoconfig/gifski.deb" "https://github.com/ImageOptim/gifski/releases/download/1.8.1/gifski_1.8.1_$(dpkg --print-architecture).deb" && dpkg -i "$autoconfig/gifski.deb" || \
+echo "gifski: no build available for current architecture, skipping install"
+
+# decrypt and uncompress into user home directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/gifmaker.sh"
+
+# setup gif maker and add alias to .bashrc
+# shellcheck disable=SC2016
+runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
 # ==================== DATA-VIEWER =========================
 echo -e "setting up data viewer service"
