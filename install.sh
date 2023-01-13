@@ -102,6 +102,18 @@ chown -R "$username":"$username" "$userhome/.ssh" "$userhome/.network-mappings"
 # setup permissions
 chmod 700 "$userhome/.ssh" "$userhome/.network-mappings"
 
+# ===================== SETUP SSHD =========================
+echo -e "setting up ssh server"
+
+# setup config overrides
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/ssh/sshd_config.d --strip-components=2 -xvf /dev/stdin "tarball/sshd/sshd_overrides.conf"
+
+# setup login banner
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc --strip-components=2 --overwrite -xvf /dev/stdin "tarball/sshd/issue.net"
+
+# setup ownership
+chown root:root /etc/ssh/sshd_config.d/sshd_overrides.conf /etc/issue.net
+
 # =================== SETUP GIT REPOS ======================
 echo -e "cloning git repositories"
 
@@ -233,8 +245,7 @@ echo -e "installing node.js"
 runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
-# install v16.16.0 for megadownload/libcurl compatibility issue
-runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm && nvm install v16.16.0' -P --login "$username"
+runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
 
 # decrypt and uncompress into user home directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
@@ -355,10 +366,10 @@ make install
 cd ..
 
 # uninstall build dependencies
-# apt-get purge -y build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot
+apt-get purge -y build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot
 
 # cleanup
-# apt-get autoremove
+apt-get autoremove
 
 # =================== SETUP CHROME =========================
 echo -e "installing google chrome"
