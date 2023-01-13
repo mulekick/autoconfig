@@ -369,7 +369,7 @@ cd ..
 apt-get purge -y build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot
 
 # cleanup
-apt-get autoremove
+apt-get autoremove -y
 
 # =================== SETUP CHROME =========================
 echo -e "installing google chrome"
