@@ -390,6 +390,18 @@ apt-get update
 apt-get install --no-install-recommends -m -y \
 google-chrome-stable
 
+# ================== SETUP POSTMAN =========================
+echo -e "installing postman"
+
+# create desktop folder
+mkdir "$userhome/Desktop"
+
+# install
+wget -qO "$autoconfig/postman-linux-x64.tar.gz" "https://dl.pstmn.io/download/latest/linux64" && tar -C "$userhome/Desktop" -zxvf "$autoconfig/postman-linux-x64.tar.gz"
+
+# setup ownership
+chown -R "$username":"$username" "$userhome/Desktop"
+
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
 
