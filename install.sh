@@ -135,10 +135,10 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/g
 echo -e "setting up $userhome"
 
 # shellcheck disable=SC2016
-extendshell='\n
-# ------ SET SHELL EXTENSIONS ------\n
-if [[ -f $HOME/.shell_extend/.bash_extend ]]; then\n
-\t. $HOME/.shell_extend/.bash_extend\n
+extendshell='
+# ------ SET SHELL EXTENSIONS ------
+if [[ -f $HOME/.shell_extend/.bash_extend ]]; then
+\t. $HOME/.shell_extend/.bash_extend
 fi'
 
 # update .bashrc
@@ -258,8 +258,8 @@ chmod 600 "$userhome/.npmrc"
 
 # global modules management 
 # shellcheck disable=SC2016
-GLOBAL_MODULES_PATH='\n
-# export npm global modules path\n
+GLOBAL_MODULES_PATH='
+# export npm global modules path
 export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 
 [[ -f "$userhome/.bashrc" ]] && echo -e "$GLOBAL_MODULES_PATH" >> "$userhome/.bashrc"
@@ -267,7 +267,7 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # install global modules and create symlink to folder 
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
-npm install -g eslint eslint-plugin-html eslint-plugin-node eslint-plugin-import js-beautify degit && \
+npm install -g eslint eslint-plugin-html eslint-plugin-node eslint-plugin-import js-beautify degit npm-check-updates && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
 # ===================== MULTIMEDIA =========================
