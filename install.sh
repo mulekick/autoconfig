@@ -75,7 +75,7 @@ cowsay cowsay-off display-dhammapada steghide
 echo -e "=== PLEASE ENTER TAR ARCHIVE PASSWORD ==="
 read -r tarpp
 
-# decrypt and uncompress into current directory
+# decrypt and uncompress user files into current directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar --strip-components=1 --wildcards -xvf /dev/stdin "tarball/user-*"
 
 # ==== CREATE USER + SETUP SSH/NETWORK MAPPINGS ============
@@ -93,7 +93,7 @@ echo "$username:$(cat "$USER_PASSWD")" | chpasswd
 # add to sudo group
 usermod -a -G sudo "$username"
 
-# decrypt and uncompress into user home directory
+# decrypt and uncompress config files into user home directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.ssh" "tarball/.network-mappings"
 
 # setup ownership
@@ -105,10 +105,10 @@ chmod 700 "$userhome/.ssh" "$userhome/.network-mappings"
 # ===================== SETUP SSHD =========================
 echo -e "setting up ssh server"
 
-# setup config overrides
+# decrypt and uncompress config files into server directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/ssh/sshd_config.d --strip-components=2 -xvf /dev/stdin "tarball/sshd/sshd_overrides.conf"
 
-# setup login banner
+# decrypt and uncompress login banner into server directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc --strip-components=2 --overwrite -xvf /dev/stdin "tarball/sshd/issue.net"
 
 # setup ownership
@@ -125,8 +125,16 @@ cd ~/$1 && \
 git config user.email $2 && \
 git config user.name $3' -P --login "$username"
 
-# decrypt and uncompress into repos
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin "tarball/codebase/*" "tarball/data-viewer/*" "tarball/megadownload/*" "tarball/node-http-tunnel/*" "tarball/stream-cdn/*"
+# decrypt and uncompress confidential data into newly cloned repositories
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin \
+"tarball/codebase/*" \
+"tarball/data-viewer/*" \
+"tarball/live-cinema/*" \
+"tarball/megadownload/*" \
+"tarball/mulekick-vercel-app/*" \
+"tarball/mulepedia/*" \
+"tarball/node-http-tunnel/*" \
+"tarball/stream-cdn/*"
 
 # restore tarball source directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
@@ -222,7 +230,7 @@ systemctl disable docker.service docker.socket containerd.service
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
 
-# decrypt and uncompress into systemd directories
+# decrypt and uncompress configuration units into systemd directories
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/docker.target"
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/data-viewer.service" "tarball/systemd/network-drives.service"
 
@@ -247,7 +255,7 @@ runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/instal
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
 
-# decrypt and uncompress into user home directory
+# decrypt and uncompress config file into user home directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
 
 # setup ownership
@@ -289,7 +297,7 @@ echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"
 wget -qO "$autoconfig/gifski.deb" "https://github.com/ImageOptim/gifski/releases/download/1.8.1/gifski_1.8.1_$(dpkg --print-architecture).deb" && dpkg -i "$autoconfig/gifski.deb" || \
 echo "gifski: no build available for current architecture, skipping install"
 
-# decrypt and uncompress into user home directory
+# decrypt and uncompress gifmaker script into user home directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/gifmaker.sh"
 
 # setup gif maker and add alias to .bashrc
@@ -325,7 +333,7 @@ xrdp xorgxrdp
 # add the xrdp user to the ssl-cert group
 adduser xrdp ssl-cert
 
-# setup custom config
+# decrypt and uncompress config files into xrdp directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --strip-components=2 --overwrite -xvf /dev/stdin "tarball/xrdp/xrdp.ini" "tarball/xrdp/sesman.ini"
 
 # setup ownership
