@@ -129,12 +129,12 @@ git config user.name $3' -P --login "$username"
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin \
 "tarball/codebase/*" \
 "tarball/data-viewer/*" \
-"tarball/live-cinema/*" \
 "tarball/megadownload/*" \
-"tarball/mulekick-vercel-app/*" \
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
-"tarball/stream-cdn/*"
+"tarball/p3rs0n4lh0m3p4g3/*" \
+"tarball/stream-cdn/*" \
+"tarball/watchteevee.social/*"
 
 # restore tarball source directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
