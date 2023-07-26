@@ -128,12 +128,13 @@ git config user.name $3' -P --login "$username"
 # decrypt and uncompress confidential data into newly cloned repositories
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin \
 "tarball/codebase/*" \
+"tarball/d0nk3y/*" \
 "tarball/data-viewer/*" \
 "tarball/megadownload/*" \
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
-"tarball/p3rs0n4lh0m3p4g3/*" \
 "tarball/stream-cdn/*" \
+"tarball/stream.generator/*" \
 "tarball/watchteevee.social/*"
 
 # restore tarball source directory
