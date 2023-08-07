@@ -99,8 +99,13 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" 
 # setup ownership
 chown -R "$username":"$username" "$userhome/.ssh" "$userhome/.network-mappings"
 
-# setup permissions
+# setup directories permissions
 chmod 700 "$userhome/.ssh" "$userhome/.network-mappings"
+
+# setup files permissions (allow shell expansion for wildcards)
+chmod 400 "$userhome/.ssh/"*
+chmod 644 "$userhome/.ssh/"*.pub
+chmod 600 "$userhome/.ssh/authorized_keys" "$userhome/.ssh/known_hosts" "$userhome/.ssh/config"
 
 # ===================== SETUP SSHD =========================
 echo -e "setting up ssh server"
