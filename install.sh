@@ -330,11 +330,11 @@ echo -e "setting up xrdp and xorg"
 # install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
 # x
 # xfce
-# xrdp
+# xrdp (freeze the xrdp and xorgxrdp packages versions for now because the latest xorgxrdp release has yet to be added to the debian repositories ...)
 apt-get install --no-install-recommends -m -y \
 xorg dbus-x11 x11-xserver-utils \
 xfce4 xfce4-goodies \
-xrdp xorgxrdp
+xrdp=0.9.12-1.1 xorgxrdp=1:0.2.12-1
 
 # add the xrdp user to the ssl-cert group
 adduser xrdp ssl-cert
