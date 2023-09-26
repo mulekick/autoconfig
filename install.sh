@@ -62,7 +62,7 @@ man-db \
 zip unzip \
 policykit-1 \
 gnupg2 pgpdump \
-procps psmisc sysstat iotop time \
+procps psmisc sysstat iotop time neofetch htop \
 net-tools nmap iftop \
 lsb-release apt-rdepends \
 shellcheck \
@@ -156,14 +156,10 @@ if [[ -f $HOME/.shell_extend/.bash_extend ]]; then
 fi'
 
 # update .bashrc
-if [[ -f "$userhome/.bashrc" ]]; then
-    echo -e "$extendshell"  >> "$userhome/.bashrc"
-fi
+[[ -f "$userhome/.bashrc" ]] && echo -e "$extendshell"  >> "$userhome/.bashrc"
 
 # set custom .vimrc
-if [[ ! -f "$userhome/.vimrc" ]]; then
-    cp "$userhome/.shell_extend/.vimrc_default" "$userhome/.vimrc"
-fi
+[[ ! -f "$userhome/.vimrc" ]] && cp "$userhome/.shell_extend/.vimrc_default" "$userhome/.vimrc"
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/.vimrc"
@@ -181,14 +177,10 @@ cp -rv "$userhome/.shell_extend" /etc/skel/.
 rm -rf /etc/skel/.shell_extend/.git
 
 # update default .bashrc
-if [[ -f /etc/skel/.bashrc ]]; then
-    echo -e "$extendshell"  >> /etc/skel/.bashrc
-fi
+[[ -f /etc/skel/.bashrc ]] && echo -e "$extendshell"  >> /etc/skel/.bashrc
 
 # set default .vimrc
-if [[ ! -f /etc/skel/.vimrc ]]; then
-    cp /etc/skel/.shell_extend/.vimrc_default /etc/skel/.vimrc
-fi
+[[ ! -f /etc/skel/.vimrc ]] && cp /etc/skel/.shell_extend/.vimrc_default /etc/skel/.vimrc
 
 # setup permissions
 chmod 600 /etc/skel/.vimrc
