@@ -27,8 +27,8 @@ USER_SHELL=/bin/bash
 # encrypted files storage
 GPG_TARBALL=$autoconfig/tarball.tar.gpg
 
-# default apt sources are configured at installation, update and upgrade
-apt-get update && apt-get upgrade -y
+# prerequisites for installation ...
+apt-get update && apt-get install --no-install-recommends -m -y curl gnupg2 ca-certificates
 
 # =============== UPDATE KERNEL VARIABLES ==================
 echo -e "updating kernel variables"
@@ -37,38 +37,89 @@ echo -e '\n
 # increase inotify max file watch limit
 fs.inotify.max_user_watches=262144' >> /etc/sysctl.conf
 
+# ================= UPDATE APT SOURCES =====================
+
+ARCH=$(dpkg --print-architecture)
+KEYRINGS="/usr/share/keyrings"
+SOURCELISTS="/etc/apt/sources.list.d"
+
+# retrieve third party gpg keys ...
+curl -fsSL 'https://download.docker.com/linux/debian/gpg' | gpg --dearmor -o "$KEYRINGS/docker-archive-keyring.gpg"
+curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -o "$KEYRINGS/google-archive-keyring.gpg"
+
+# add third party sources ...
+echo "deb [arch=$ARCH signed-by=$KEYRINGS/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee "$SOURCELISTS/docker.list" > /dev/null
+echo "deb [arch=$ARCH signed-by=$KEYRINGS/google-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee "$SOURCELISTS/google-chrome.list" > /dev/null
+
+# update all sources and upgrade ...
+apt-get update && apt-get upgrade -y
+
 # ================== INSTALL PACKAGES ======================
 echo -e "installing default packages"
 
-# install packages (only main dependencies, ignore missing, yes to all prompts)
+# policy management
+# system monitoring (most to least relevant)
+# network utilities
+# encryption
+# archive management
 # shell utilities
 # editors
 # man pages
-# archive management
-# policy management
-# encryption
-# system utilities
-# network utilities
-# distro + packages management
-# shell linter
-# docker-relevant packages
+# x11
+# xrdp
+# multimedia
+# google chrome
 # windows network drives mapping
+# docker related packages
+# shell linter
 # miscellaneous
 
-apt-get install --no-install-recommends -m -y \
-bash-completion tree tmux curl wget dos2unix \
+MINIMAL="policykit-1 \
+neofetch procps htop iftop psmisc time iotop sysstat \
+iproute2 nmap mtr wget \
+pgpdump \
+zip unzip \
+bash-completion tree tmux dos2unix \
 vim vim-common vim-runtime \
 man-db \
-zip unzip \
-policykit-1 \
-gnupg2 pgpdump \
-procps psmisc sysstat iotop time neofetch htop \
-net-tools nmap iftop \
-lsb-release apt-rdepends \
-shellcheck \
-ca-certificates jq \
+xorg \
+xrdp xorgxrdp \
+ffmpeg \
+google-chrome-stable \
 samba-client samba-common cifs-utils \
-cowsay cowsay-off display-dhammapada steghide
+jq docker-ce docker-ce-cli containerd.io \
+shellcheck \
+fonts-noto-color-emoji cowsay cowsay-off display-dhammapada steghide"
+
+# x window manager + addons + media player
+# xrdp audio module build dependencies
+# pulseaudio volume control
+RECOMMENDS="xfce4 xfce4-goodies parole \
+build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot \
+pavucontrol"
+
+# packages to purge post-install ...
+PURGE="build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot nano"
+
+# install only main dependencies, ignore missing, yes to all prompts
+# shellcheck disable=SC2086
+apt-get install --no-install-recommends -m -y $MINIMAL
+
+# install with recommends ...
+# shellcheck disable=SC2086
+apt-get install -m -y $RECOMMENDS
+
+# ================== CONFIGURE SHELL ======================== 
+echo -e "configuring shell"
+
+# remove nano as an editor alternative
+update-alternatives --remove editor /bin/nano
+
+# set vim.basic as an editor alternative
+[[ -x /usr/bin/vim.basic ]] && update-alternatives --set editor /usr/bin/vim.basic
+
+# editor alternative should already be in auto mode, but anyway
+update-alternatives --auto editor
 
 # ================= EXTRACT TARBALL ========================
 # prompt password
@@ -85,7 +136,7 @@ userhome="/home/$username"
 echo -e "creating user $username"
 
 # create user (specify shell, disable login)
-adduser "$username" --shell $USER_SHELL --gecos "$(cat "$USER_GECOS")" --disabled-login
+adduser "$username" --shell "$USER_SHELL" --gecos "$(cat "$USER_GECOS")" --disabled-login
 
 # setup user password
 echo "$username:$(cat "$USER_PASSWD")" | chpasswd
@@ -119,6 +170,73 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc --strip
 # setup ownership
 chown root:root /etc/ssh/sshd_config.d/sshd_overrides.conf /etc/issue.net
 
+# ================ SETUP X.ORG / XRDP ======================
+echo -e "setting up xrdp and xorg"
+
+# add the xrdp user to the ssl-cert group
+adduser xrdp ssl-cert
+
+# decrypt and uncompress config files into xrdp directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --strip-components=2 --overwrite -xvf /dev/stdin "tarball/xrdp/xrdp.ini" "tarball/xrdp/sesman.ini"
+
+# setup ownership
+chown root:root /etc/xrdp/xrdp.ini /etc/xrdp/sesman.ini
+
+# =============== SETUP AUDIO FOR XRDP =====================
+echo -e "building and installing xrdp audio module"
+
+# clone repo
+git clone https://github.com/neutrinolabs/pulseaudio-module-xrdp.git "$autoconfig/pulseaudio-module-xrdp"
+
+# cd into repo
+cd "$autoconfig/pulseaudio-module-xrdp" || exit 1
+
+# run build scripts
+./scripts/install_pulseaudio_sources_apt_wrapper.sh
+
+# move build directory
+mv ~/pulseaudio.src "$autoconfig/."
+
+# bootstrap and configure
+./bootstrap && ./configure PULSE_DIR="$autoconfig/pulseaudio.src"
+
+# make
+make
+
+# install
+make install
+
+# cd back into autoconfig directory
+cd ..
+
+# ==================== SETUP DOCKER ========================
+echo -e "installing docker"
+
+# add user to group
+usermod -a -G docker "$username"
+
+# disable docker auto start
+systemctl disable docker.service docker.socket containerd.service
+
+# =================== SETUP SYSTEMD ========================
+echo -e "configuring systemd"
+
+# decrypt and uncompress configuration units into systemd directories
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/docker.target"
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/network-drives.service"
+
+# setup ownership
+chown root:root /lib/systemd/system/docker.target /etc/systemd/system/network-drives.service
+
+# rebuild dependency tree
+systemctl daemon-reload
+
+# enable docker configuration unit, create symlinks
+systemctl enable docker.target
+
+# set default system target
+systemctl set-default multi-user.target
+
 # =================== SETUP GIT REPOS ======================
 echo -e "cloning git repositories"
 
@@ -133,13 +251,12 @@ git config user.name $3' -P --login "$username"
 # decrypt and uncompress confidential data into newly cloned repositories
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin \
 "tarball/codebase/*" \
-"tarball/d0nk3y/*" \
-"tarball/data-viewer/*" \
 "tarball/megadownload/*" \
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
 "tarball/stream-cdn/*" \
 "tarball/stream.generator/*" \
+"tarball/twitch.generator/*" \
 "tarball/watchteevee.social/*"
 
 # restore tarball source directory
@@ -185,70 +302,25 @@ rm -rf /etc/skel/.shell_extend/.git
 # setup permissions
 chmod 600 /etc/skel/.vimrc
 
-# ================== CONFIGURE SHELL ======================== 
-echo -e "configuring shell"
+# ===================== MULTIMEDIA =========================
+echo -e "installing multimedia tools"
 
-# remove nano as an editor alternative
-update-alternatives --remove editor /bin/nano
+# install gifski
+wget -qO "$autoconfig/gifski.deb" "https://github.com/ImageOptim/gifski/releases/download/1.13.0/gifski_1.13.0-1_$ARCH.deb" && dpkg -i "$autoconfig/gifski.deb" || \
+echo "gifski: no build available for current architecture, skipping install"
 
-# remove nano, period
-apt-get purge -y nano
+# decrypt and uncompress gifmaker script into user home directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/gifmaker.sh"
 
-# set vim.basic as an editor alternative
-[[ -x /usr/bin/vim.basic ]] && update-alternatives --set editor /usr/bin/vim.basic
-
-# editor alternative should already be in auto mode, but anyway
-update-alternatives --auto editor
-
-# ==================== SETUP DOCKER ========================
-echo -e "installing docker"
-
-# retrieve docker gpg key
-curl -fsSL 'https://download.docker.com/linux/debian/gpg' | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-# add apt source
-echo \
-"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# update
-apt-get update
-
-# install packages (only main dependencies, ignore missing, yes to all prompts)
-# docker packages
-apt-get install --no-install-recommends -m -y \
-docker-ce docker-ce-cli containerd.io
-
-# add user to group
-usermod -a -G docker "$username"
-
-# disable docker auto start
-systemctl disable docker.service docker.socket containerd.service
-
-# =================== SETUP SYSTEMD ========================
-echo -e "configuring systemd"
-
-# decrypt and uncompress configuration units into systemd directories
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /lib/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/docker.target"
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/systemd/system --strip-components=2 -xvf /dev/stdin "tarball/systemd/data-viewer.service" "tarball/systemd/network-drives.service"
-
-# setup ownership
-chown root:root /lib/systemd/system/docker.target /etc/systemd/system/data-viewer.service /etc/systemd/system/network-drives.service
-
-# rebuild dependency tree
-systemctl daemon-reload
-
-# enable docker configuration unit, create symlinks
-systemctl enable docker.target
-
-# set default system target
-systemctl set-default multi-user.target
+# setup gif maker and add alias to .bashrc
+# shellcheck disable=SC2016
+runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$username"
 
 # =================== SETUP NODE.JS ========================
 echo -e "installing node.js"
 
 # setup nvm
-runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash' -P --login "$username"
+runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
@@ -276,126 +348,6 @@ runuser -c '. .nvm/nvm.sh && \
 npm install -g eslint eslint-plugin-html eslint-plugin-node eslint-plugin-import js-beautify degit npm-check-updates && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
-# ===================== MULTIMEDIA =========================
-echo -e "setting up multimedia tools"
-
-# install packages (only main dependencies, ignore missing, yes to all prompts)
-# ffmpeg
-apt-get install --no-install-recommends -m -y \
-ffmpeg
-
-# setup megadownload and add alias to .bashrc
-# shellcheck disable=SC2016
-runuser -c '. .nvm/nvm.sh && \
-cd git/megadownload && \
-npm install && \
-echo '\''alias mdl=$HOME/git/megadownload/megadownload.js'\'' >> "$HOME/.bashrc"' -P --login "$username"
-
-# install gifski
-wget -qO "$autoconfig/gifski.deb" "https://github.com/ImageOptim/gifski/releases/download/1.8.1/gifski_1.8.1_$(dpkg --print-architecture).deb" && dpkg -i "$autoconfig/gifski.deb" || \
-echo "gifski: no build available for current architecture, skipping install"
-
-# decrypt and uncompress gifmaker script into user home directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/gifmaker.sh"
-
-# setup gif maker and add alias to .bashrc
-# shellcheck disable=SC2016
-runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$username"
-
-# ==================== DATA-VIEWER =========================
-echo -e "setting up data viewer service"
-
-# start docker
-systemctl isolate rundocker.target 
-
-# run install script
-# shellcheck disable=SC2016
-runuser -c 'cd ~/git/data-viewer && \
-. data-viewer-install.sh' -P --login "$username"
-
-# stop docker
-systemctl isolate multi-user.target
-
-# ================ SETUP X.ORG / XRDP ======================
-echo -e "setting up xrdp and xorg"
-
-# install packages (only main dependencies, ignore missing, yes to all prompts, progress indicator)
-# x
-# xfce
-# xrdp (freeze the xrdp and xorgxrdp packages versions for now because the latest xorgxrdp release has yet to be added to the debian repositories ...)
-apt-get install --no-install-recommends -m -y \
-xorg dbus-x11 x11-xserver-utils \
-xfce4 xfce4-goodies \
-xrdp=0.9.12-1.1 xorgxrdp=1:0.2.12-1
-
-# add the xrdp user to the ssl-cert group
-adduser xrdp ssl-cert
-
-# decrypt and uncompress config files into xrdp directory
-gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C /etc/xrdp --strip-components=2 --overwrite -xvf /dev/stdin "tarball/xrdp/xrdp.ini" "tarball/xrdp/sesman.ini"
-
-# setup ownership
-chown root:root /etc/xrdp/xrdp.ini /etc/xrdp/sesman.ini
-
-# =============== SETUP AUDIO FOR XRDP =====================
-echo -e "building and installing xrdp audio module"
-
-# install packages (yes to all prompts)
-# module build dependencies
-# pulseaudio volume control
-apt-get install -y \
-build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot \
-pavucontrol
-
-# clone repo
-git clone https://github.com/neutrinolabs/pulseaudio-module-xrdp.git "$autoconfig/pulseaudio-module-xrdp"
-
-# cd into repo
-cd "$autoconfig/pulseaudio-module-xrdp" || exit 1
-
-# run build scripts
-./scripts/install_pulseaudio_sources_apt_wrapper.sh
-
-# move build directory
-mv ~/pulseaudio.src "$autoconfig/."
-
-# bootstrap and configure
-./bootstrap && ./configure PULSE_DIR="$autoconfig/pulseaudio.src"
-
-# make
-make
-
-# install
-make install
-
-# cd back into autoconfig directory
-cd ..
-
-# uninstall build dependencies
-apt-get purge -y build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot
-
-# cleanup
-apt-get autoremove -y
-
-# =================== SETUP CHROME =========================
-echo -e "installing google chrome"
-
-# retrieve google gpg key
-curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -o /usr/share/keyrings/google-archive-keyring.gpg
-
-# add apt source
-echo \
-"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/google-archive-keyring.gpg] \
-http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
-
-# update
-apt-get update
-
-# install packages (only main dependencies, ignore missing, yes to all prompts)
-# chrome
-apt-get install --no-install-recommends -m -y \
-google-chrome-stable
-
 # ================== SETUP POSTMAN =========================
 echo -e "installing postman"
 
@@ -410,6 +362,10 @@ chown -R "$username":"$username" "$userhome/Desktop"
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
+
+# uninstall irrelevant packages
+# shellcheck disable=SC2086
+apt-get purge -y $PURGE && apt-get autoremove -y
 
 # end message
 endmsg="installation complete.\ndon't forget to install the following extensions if using as a vscode remote:\n$(cat "$USER_EXTENSIONS")"
