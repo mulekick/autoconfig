@@ -21,7 +21,7 @@ USER_NAME=$autoconfig/user-name
 USER_GECOS=$autoconfig/user-gecos
 USER_PASSWD=$autoconfig/user-password
 USER_REPOS=$autoconfig/user-repositories
-USER_EXTENSIONS=$autoconfig/user-extensions
+USER_POSTINSTALL=$autoconfig/user-postinstall
 USER_SHELL=/bin/bash
 
 # encrypted files storage
@@ -38,6 +38,7 @@ echo -e '\n
 fs.inotify.max_user_watches=262144' >> /etc/sysctl.conf
 
 # ================= UPDATE APT SOURCES =====================
+echo -e "updating apt sources"
 
 ARCH=$(dpkg --print-architecture)
 KEYRINGS="/usr/share/keyrings"
@@ -46,10 +47,12 @@ SOURCELISTS="/etc/apt/sources.list.d"
 # retrieve third party gpg keys ...
 curl -fsSL 'https://download.docker.com/linux/debian/gpg' | gpg --dearmor -o "$KEYRINGS/docker-archive-keyring.gpg"
 curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -o "$KEYRINGS/google-archive-keyring.gpg"
+curl -fsSL 'https://packages.cloud.google.com/apt/doc/apt-key.gpg' | gpg --dearmor -o "$KEYRINGS/cloud.google.gpg"
 
 # add third party sources ...
 echo "deb [arch=$ARCH signed-by=$KEYRINGS/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee "$SOURCELISTS/docker.list" > /dev/null
 echo "deb [arch=$ARCH signed-by=$KEYRINGS/google-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee "$SOURCELISTS/google-chrome.list" > /dev/null
+echo "deb [signed-by=$KEYRINGS/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee "$SOURCELISTS/google-cloud-sdk.list" > /dev/null
 
 # update all sources and upgrade ...
 apt-get update && apt-get upgrade -y
@@ -69,8 +72,10 @@ echo -e "installing default packages"
 # xrdp
 # multimedia
 # google chrome
+# google cloud cli
 # windows network drives mapping
 # docker related packages
+# python
 # shell linter
 # miscellaneous
 
@@ -86,8 +91,10 @@ xorg \
 xrdp xorgxrdp \
 ffmpeg \
 google-chrome-stable \
+google-cloud-cli \
 samba-client samba-common cifs-utils \
 jq docker-ce docker-ce-cli containerd.io \
+python3 python3-pip pipx \
 shellcheck \
 fonts-noto-color-emoji cowsay cowsay-off display-dhammapada steghide"
 
@@ -217,6 +224,12 @@ usermod -a -G docker "$username"
 
 # disable docker auto start
 systemctl disable docker.service docker.socket containerd.service
+
+# decrypt and uncompress registries credentials into user home directory
+gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" --strip-components=1 -xvf /dev/stdin "tarball/.docker"
+
+# setup ownership
+chown -R "$username":"$username" "$userhome/.docker"
 
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
@@ -360,6 +373,12 @@ wget -qO "$autoconfig/postman-linux-x64.tar.gz" "https://dl.pstmn.io/download/la
 # setup ownership
 chown -R "$username":"$username" "$userhome/Desktop"
 
+# ================== INSTALL LINODE CLI =========================
+echo -e "installing linode CLI"
+
+# install linode-cli from the python repositories
+runuser -c 'pipx install linode-cli && pipx-ensurepath' -P --login "$username"
+
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
 
@@ -368,7 +387,7 @@ echo -e "removing installation files"
 apt-get purge -y $PURGE && apt-get autoremove -y
 
 # end message
-endmsg="installation complete.\ndon't forget to install the following extensions if using as a vscode remote:\n$(cat "$USER_EXTENSIONS")"
+endmsg="installation complete.\ndon't forget to complete the following post-installation steps :\n$(cat "$USER_POSTINSTALL")"
 
 # remove local repo
 cd .. && rm -rf "$autoconfig"
