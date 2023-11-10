@@ -263,7 +263,9 @@ git config user.name $3' -P --login "$username"
 
 # decrypt and uncompress confidential data into newly cloned repositories
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git" --strip-components=1 --wildcards -xvf /dev/stdin \
+"tarball/.backup_and_sync/*" \
 "tarball/codebase/*" \
+"tarball/fullstackjavascript/*" \
 "tarball/megadownload/*" \
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
