@@ -272,8 +272,8 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/g
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
 "tarball/stream-cdn/*" \
+"tarball/stream-from-the-shell/*" \
 "tarball/stream.generator/*" \
-"tarball/twitch.generator/*" \
 "tarball/watchteevee.social/*"
 
 # restore tarball source directory
