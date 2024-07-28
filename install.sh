@@ -271,10 +271,9 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/g
 "tarball/megadownload/*" \
 "tarball/mulepedia/*" \
 "tarball/node-http-tunnel/*" \
-"tarball/stream-cdn/*" \
 "tarball/stream-from-the-shell/*" \
 "tarball/stream.generator/*" \
-"tarball/watchteevee.social/*"
+"tarball/watchteevee/*"
 
 # restore tarball source directory
 gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome/git/autoconfig" -xvf /dev/stdin "tarball"
@@ -284,10 +283,18 @@ echo -e "setting up $userhome"
 
 # shellcheck disable=SC2016
 extendshell='
-# ------ SET SHELL EXTENSIONS ------
+# ------ GLOBAL SHELL EXTENSIONS ------
+
+# enable pipx autocompletion
+eval "$(register-python-argcomplete pipx)"
+
+# enable custom shell utilities
 if [[ -f $HOME/.shell_extend/.bash_extend ]]; then
 \t. $HOME/.shell_extend/.bash_extend
-fi'
+fi
+
+# -------------------------------------
+'
 
 # update .bashrc
 [[ -f "$userhome/.bashrc" ]] && echo -e "$extendshell"  >> "$userhome/.bashrc"
@@ -332,6 +339,9 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" 
 # setup gif maker and add alias to .bashrc
 # shellcheck disable=SC2016
 runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$username"
+
+# install youtube-dl nightly build
+runuser -c 'pipx install "git+https://github.com/ytdl-org/youtube-dl.git" && pipx ensurepath' -P --login "$username"
 
 # =================== SETUP NODE.JS ========================
 echo -e "installing node.js"
@@ -381,7 +391,7 @@ chown -R "$username":"$username" "$userhome/Desktop"
 echo -e "installing linode CLI"
 
 # install linode-cli from the python repositories
-runuser -c 'pipx install linode-cli && pipx-ensurepath' -P --login "$username"
+runuser -c 'pipx install linode-cli && pipx ensurepath' -P --login "$username"
 
 # ====================== CLEANUP ===========================
 echo -e "removing installation files"
