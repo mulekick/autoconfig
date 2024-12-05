@@ -28,14 +28,15 @@ USER_SHELL=/bin/bash
 GPG_TARBALL=$autoconfig/tarball.tar.gpg
 
 # prerequisites for installation ...
-apt-get update && apt-get install --no-install-recommends -m -y curl gnupg2 ca-certificates
+apt-get update && apt-get install --no-install-recommends -m -y apt-transport-https ca-certificates curl gpg
 
 # =============== UPDATE KERNEL VARIABLES ==================
 echo -e "updating kernel variables"
 
-echo -e '\n
+cat << EOF >> /etc/sysctl.d/local.conf
 # increase inotify max file watch limit
-fs.inotify.max_user_watches=262144' >> /etc/sysctl.conf
+fs.inotify.max_user_watches=262144
+EOF
 
 # ================= UPDATE APT SOURCES =====================
 echo -e "updating apt sources"
@@ -44,15 +45,28 @@ ARCH=$(dpkg --print-architecture)
 KEYRINGS="/usr/share/keyrings"
 SOURCELISTS="/etc/apt/sources.list.d"
 
+# variables
+ARCH=$(dpkg --print-architecture)
+KEYRINGS="/usr/share/keyrings"
+SOURCELISTS="/etc/apt/sources.list.d"
+K8S_VERSION="v1.31"
+CRIO_VERSION="v1.31"
+
 # retrieve third party gpg keys ...
 curl -fsSL 'https://download.docker.com/linux/debian/gpg' | gpg --dearmor -o "$KEYRINGS/docker-archive-keyring.gpg"
 curl -fsSL 'https://dl.google.com/linux/linux_signing_key.pub' | gpg --dearmor -o "$KEYRINGS/google-archive-keyring.gpg"
 curl -fsSL 'https://packages.cloud.google.com/apt/doc/apt-key.gpg' | gpg --dearmor -o "$KEYRINGS/cloud.google.gpg"
+curl -fsSL "https://pkgs.k8s.io/core:/stable:/$K8S_VERSION/deb/Release.key" | gpg --dearmor -o "$KEYRINGS/kubernetes-apt-keyring.gpg"
+curl -fsSL "https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/Release.key" | gpg --dearmor -o "$KEYRINGS/cri-o-apt-keyring.gpg"
+curl -fsSL "https://baltocdn.com/helm/signing.asc" | gpg --dearmor -o "$KEYRINGS/helm.gpg"
 
 # add third party sources ...
 echo "deb [arch=$ARCH signed-by=$KEYRINGS/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee "$SOURCELISTS/docker.list" > /dev/null
 echo "deb [arch=$ARCH signed-by=$KEYRINGS/google-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee "$SOURCELISTS/google-chrome.list" > /dev/null
 echo "deb [signed-by=$KEYRINGS/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee "$SOURCELISTS/google-cloud-sdk.list" > /dev/null
+echo "deb [signed-by=$KEYRINGS/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$K8S_VERSION/deb/ /" | tee "$SOURCELISTS/kubernetes.list" > /dev/null
+echo "deb [signed-by=$KEYRINGS/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/ /" | tee "$SOURCELISTS/cri-o.list" > /dev/null
+echo "deb [arch=$ARCH signed-by=$KEYRINGS/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee "$SOURCELISTS/helm-stable-debian.list" > /dev/null
 
 # update all sources and upgrade ...
 apt-get update && apt-get upgrade -y
@@ -101,9 +115,11 @@ fonts-noto-color-emoji cowsay cowsay-off display-dhammapada steghide"
 # x window manager + addons + media player
 # xrdp audio module build dependencies
 # pulseaudio volume control
+# kubernetes related packages
 RECOMMENDS="xfce4 xfce4-goodies parole \
 build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot \
-pavucontrol"
+pavucontrol \
+cri-o kubelet kubeadm kubectl helm"
 
 # packages to purge post-install ...
 PURGE="build-essential dpkg-dev libpulse-dev autoconf libtool debootstrap schroot nano"
@@ -217,7 +233,7 @@ make install
 cd ..
 
 # ==================== SETUP DOCKER ========================
-echo -e "installing docker"
+echo -e "configuring docker"
 
 # add user to group
 usermod -a -G docker "$username"
@@ -230,6 +246,15 @@ gpg --decrypt --batch --passphrase "$tarpp" "$GPG_TARBALL" | tar -C "$userhome" 
 
 # setup ownership
 chown -R "$username":"$username" "$userhome/.docker"
+
+# ================= SETUP KUBERNETES =======================
+echo -e "configuring kubernetes"
+
+# pin core kubernetes packages versions
+apt-mark hold cri-o kubelet kubeadm kubectl
+
+# disable crio and kubelet auto start
+systemctl disable crio.service kubelet.service
 
 # =================== SETUP SYSTEMD ========================
 echo -e "configuring systemd"
@@ -347,7 +372,7 @@ runuser -c 'pipx install "git+https://github.com/ytdl-org/youtube-dl.git" && pip
 echo -e "installing node.js"
 
 # setup nvm
-runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash' -P --login "$username"
+runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
 runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
@@ -372,7 +397,7 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 # install global modules and create symlink to folder 
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
-npm install -g eslint eslint-plugin-html eslint-plugin-node eslint-plugin-import js-beautify degit npm-check-updates && \
+npm install -g degit npm-check-updates js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
 
 # ================== SETUP POSTMAN =========================
