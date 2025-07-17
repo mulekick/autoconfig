@@ -323,10 +323,8 @@ git config user.name $3' -P --login "$username"
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME/git" --strip-components=1 --wildcards -xvf /dev/stdin \
 "tarball/cloud-control/*" \
 "tarball/codebase/*" \
-"tarball/fullstackjavascript/*" \
 "tarball/helm-charts/*" \
 "tarball/megadownload/*" \
-"tarball/mulepedia/*" \
 "tarball/stream-from-the-shell/*" \
 "tarball/stream.generator/*" \
 "tarball/watchteevee/*"
@@ -418,7 +416,7 @@ announce "installing node.js"
 runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash' -P --login "$username"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
-runuser -c '. .nvm/nvm.sh && nvm install --lts --latest-npm' -P --login "$username"
+runuser -c '. .nvm/nvm.sh && nvm install --lts --default --latest-npm' -P --login "$username"
 
 # decrypt and uncompress config file into user home directory
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
