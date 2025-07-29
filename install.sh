@@ -326,7 +326,7 @@ gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_
 "tarball/helm-charts/*" \
 "tarball/megadownload/*" \
 "tarball/stream-from-the-shell/*" \
-"tarball/stream.generator/*" \
+"tarball/stream-from-the-shell-srt/*" \
 "tarball/watchteevee/*"
 
 # restore tarball source directory
@@ -339,7 +339,7 @@ gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_
 announce "setting up $USER_HOME"
 
 # shellcheck disable=SC2016
-extendshell='
+EXTEND_SHELL='
 # ------ GLOBAL SHELL EXTENSIONS ------
 
 # enable pipx autocompletion
@@ -354,7 +354,7 @@ fi
 '
 
 # update .bashrc
-if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$extendshell"  >> "$USER_HOME/.bashrc"; fi
+if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$EXTEND_SHELL"  >> "$USER_HOME/.bashrc"; fi
 
 # set custom .vimrc
 if [[ ! -f "$USER_HOME/.vimrc" ]]; then cp "$USER_HOME/.shell_extend/.vimrc_default" "$USER_HOME/.vimrc"; fi
@@ -378,7 +378,7 @@ cp -rv "$USER_HOME/.shell_extend" /etc/skel/.
 rm -rf /etc/skel/.shell_extend/.git
 
 # update default .bashrc
-if [[ -f /etc/skel/.bashrc ]]; then echo -e "$extendshell"  >> /etc/skel/.bashrc; fi
+if [[ -f /etc/skel/.bashrc ]]; then echo -e "$EXTEND_SHELL"  >> /etc/skel/.bashrc; fi
 
 # set default .vimrc
 if [[ ! -f /etc/skel/.vimrc ]]; then cp /etc/skel/.shell_extend/.vimrc_default /etc/skel/.vimrc; fi
