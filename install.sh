@@ -19,18 +19,22 @@ fi
 ##############################################################
 
 # avoid confusion with built in shell variables
-USER_NAME="$EXEC_PATH/user-name"
-USER_GECOS="$EXEC_PATH/user-gecos"
-USER_PASSWD="$EXEC_PATH/user-password"
-USER_REPOS="$EXEC_PATH/user-repositories"
-USER_POSTINSTALL="$EXEC_PATH/user-postinstall"
+USER_NAME=$(cat "$EXEC_PATH/user-name")
+USER_GECOS=$(cat "$EXEC_PATH/user-gecos")
+USER_PASSWD=$(cat "$EXEC_PATH/user-password")
+USER_HOME="/home/$USER_NAME"
 USER_SHELL="/bin/bash"
+USER_REPOSITORIES_LIST="$EXEC_PATH/user-repositories"
+USER_POSTINSTALL=$(cat "$EXEC_PATH/user-postinstall")
 
 # encrypted files storage
 GPG_TARBALL="$EXEC_PATH/tarball.tar.gpg"
 
 # prerequisites for installation ...
-apt-get update && apt-get install --no-install-recommends -m -y ca-certificates curl gpg
+PREREQUISITES="ca-certificates curl gpg"
+
+# shellcheck disable=SC2086
+apt-get update && apt-get install --no-install-recommends -m -y $PREREQUISITES
 
 ##############################################################
 #                       UTILS FUNCTIONS                      #
@@ -177,25 +181,22 @@ gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar --strip-co
 #        CREATE USER + SETUP SSH/NETWORK MAPPINGS            #
 ##############################################################
 
-username=$(cat "$USER_NAME")
-USER_HOME="/home/$username"
-
-announce "creating user $username"
+announce "creating user $USER_NAME"
 
 # create user (specify shell, disable login)
-adduser "$username" --shell "$USER_SHELL" --gecos "$(cat "$USER_GECOS")" --disabled-login
+adduser "$USER_NAME" --shell "$USER_SHELL" --gecos "$USER_GECOS" --disabled-login
 
 # setup user password
-echo "$username:$(cat "$USER_PASSWD")" | chpasswd
+echo "$USER_NAME:$USER_PASSWD" | chpasswd
 
 # add to sudo group
-usermod -a -G sudo "$username"
+usermod -a -G sudo "$USER_NAME"
 
 # decrypt and uncompress config files into user home directory
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/.ssh" "tarball/.network-mappings"
 
 # setup ownership
-chown -R "$username":"$username" "$USER_HOME/.ssh" "$USER_HOME/.network-mappings"
+chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.ssh" "$USER_HOME/.network-mappings"
 
 # setup directories permissions
 chmod 700 "$USER_HOME/.ssh" "$USER_HOME/.network-mappings"
@@ -272,7 +273,7 @@ cd ..
 announce "configuring docker"
 
 # add user to group
-usermod -a -G docker "$username"
+usermod -a -G docker "$USER_NAME"
 
 # disable docker auto start
 systemctl disable docker.service docker.socket containerd.service
@@ -281,7 +282,7 @@ systemctl disable docker.service docker.socket containerd.service
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/.docker"
 
 # setup ownership
-chown -R "$username":"$username" "$USER_HOME/.docker"
+chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.docker"
 
 ##############################################################
 #                        SETUP SYSTEMD                       #
@@ -313,11 +314,11 @@ announce "cloning git repositories"
 
 # clone repositories
 # shellcheck disable=SC2016
-xargs -a "$USER_REPOS" -P 1 -tn 4 runuser -c 'mkdir -pv ~/$1 && \
+xargs -a "$USER_REPOSITORIES_LIST" -P 1 -tn 4 runuser -c 'mkdir -pv ~/$1 && \
 git clone $0 ~/$1 && \
 cd ~/$1 && \
 git config user.email $2 && \
-git config user.name $3' -P --login "$username"
+git config user.name $3' -P --login "$USER_NAME"
 
 # decrypt and uncompress confidential data into newly cloned repositories
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME/git" --strip-components=1 --wildcards -xvf /dev/stdin \
@@ -360,7 +361,7 @@ if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$EXTEND_SHELL"  >> "$USER_HOME/.
 if [[ ! -f "$USER_HOME/.vimrc" ]]; then cp "$USER_HOME/.shell_extend/.vimrc_default" "$USER_HOME/.vimrc"; fi
 
 # setup ownership
-chown -R "$username":"$username" "$USER_HOME/.vimrc"
+chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.vimrc"
 
 # setup permissions
 chmod 600 "$USER_HOME/.vimrc"
@@ -401,10 +402,7 @@ gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_
 
 # setup gif maker and add alias to .bashrc
 # shellcheck disable=SC2016
-runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$username"
-
-# install youtube-dl nightly build
-runuser -c 'pipx install "git+https://github.com/ytdl-org/youtube-dl.git" && pipx ensurepath' -P --login "$username"
+runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$USER_NAME"
 
 ##############################################################
 #                         SETUP NODE.JS                      #
@@ -413,21 +411,21 @@ runuser -c 'pipx install "git+https://github.com/ytdl-org/youtube-dl.git" && pip
 announce "installing node.js"
 
 # setup nvm
-runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash' -P --login "$username"
+runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash' -P --login "$USER_NAME"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
-runuser -c '. .nvm/nvm.sh && nvm install --lts --default --latest-npm' -P --login "$username"
+runuser -c '. .nvm/nvm.sh && nvm install --lts --default --latest-npm' -P --login "$USER_NAME"
 
 # decrypt and uncompress config file into user home directory
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
 
 # setup ownership
-chown "$username":"$username" "$USER_HOME/.npmrc"
+chown "$USER_NAME:$USER_NAME" "$USER_HOME/.npmrc"
 
 # setup permissions
 chmod 600 "$USER_HOME/.npmrc"
 
-# global modules management 
+# global modules management
 # shellcheck disable=SC2016
 GLOBAL_MODULES_PATH='
 # export npm global modules path
@@ -435,11 +433,11 @@ export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
 
 if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$GLOBAL_MODULES_PATH" >> "$USER_HOME/.bashrc"; fi
 
-# install global modules and create symlink to folder 
+# install global modules and create symlink to folder
 # shellcheck disable=SC2016
 runuser -c '. .nvm/nvm.sh && \
 npm install -g degit npm-check-updates js-beautify && \
-ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$username"
+ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$USER_NAME"
 
 ##############################################################
 #                        SETUP POSTMAN                       #
@@ -454,7 +452,7 @@ mkdir "$USER_HOME/Desktop"
 wget -qO "$EXEC_PATH/postman-linux-x64.tar.gz" "https://dl.pstmn.io/download/latest/linux64" && tar -C "$USER_HOME/Desktop" -zxvf "$EXEC_PATH/postman-linux-x64.tar.gz"
 
 # setup ownership
-chown -R "$username":"$username" "$USER_HOME/Desktop"
+chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/Desktop"
 
 ##############################################################
 #                      INSTALL LINODE CLI                    #
@@ -463,7 +461,7 @@ chown -R "$username":"$username" "$USER_HOME/Desktop"
 announce "installing linode CLI"
 
 # install linode-cli from the python repositories
-runuser -c 'pipx install linode-cli && pipx ensurepath' -P --login "$username"
+runuser -c 'pipx install linode-cli && pipx ensurepath' -P --login "$USER_NAME"
 
 ##############################################################
 #                            CLEAN UP                        #
@@ -476,7 +474,7 @@ announce "removing installation files"
 apt-get purge -y $PURGE && apt-get autoremove -y
 
 # end message
-ENDMSG="installation complete.\ndon't forget to complete the following post-installation steps :\n$(cat "$USER_POSTINSTALL")"
+ENDMSG="installation complete.\ndon't forget to complete the following post-installation steps :\n$USER_POSTINSTALL"
 
 # remove local repo
 cd .. && rm -rf "$EXEC_PATH"
