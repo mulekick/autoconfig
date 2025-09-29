@@ -61,7 +61,7 @@ function announce {
 
 announce "updating kernel variables"
 
-cat << EOF >> /etc/sysctl.d/local.conf
+cat << "EOF" >> /etc/sysctl.d/local.conf
 # increase inotify max file watch limit
 fs.inotify.max_user_watches=262144
 EOF
@@ -161,7 +161,7 @@ announce "configuring shell"
 update-alternatives --remove editor /bin/nano
 
 # set vim.basic as an editor alternative
-if [[ -x /usr/bin/vim.basic ]]; then update-alternatives --set editor /usr/bin/vim.basic; fi
+[[ -x /usr/bin/vim.basic ]] && update-alternatives --set editor /usr/bin/vim.basic
 
 # editor alternative should already be in auto mode, but anyway
 update-alternatives --auto editor
@@ -339,26 +339,18 @@ gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_
 
 announce "setting up $USER_HOME"
 
-# shellcheck disable=SC2016
-EXTEND_SHELL='
-# ------ GLOBAL SHELL EXTENSIONS ------
-
+# update .bashrc
+[[ -f "$USER_HOME/.bashrc" ]] && cat << "EOF" >> "$USER_HOME/.bashrc"
+########################
+# SET SHELL EXTENSIONS #
+########################
+[[ -x "$HOME/shell-extend/extend" ]] && source "$HOME/shell-extend/extend"
 # enable pipx autocompletion
 eval "$(register-python-argcomplete pipx)"
-
-# enable custom shell utilities
-if [[ -f $HOME/.shell_extend/.bash_extend ]]; then
-\t. $HOME/.shell_extend/.bash_extend
-fi
-
-# -------------------------------------
-'
-
-# update .bashrc
-if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$EXTEND_SHELL"  >> "$USER_HOME/.bashrc"; fi
+EOF
 
 # set custom .vimrc
-if [[ ! -f "$USER_HOME/.vimrc" ]]; then cp "$USER_HOME/.shell_extend/.vimrc_default" "$USER_HOME/.vimrc"; fi
+[[ ! -f "$USER_HOME/.vimrc" ]] && cp "$USER_HOME/shell-extend/.vimrc" "$USER_HOME/.vimrc"
 
 # setup ownership
 chown -R "$USER_NAME:$USER_NAME" "$USER_HOME/.vimrc"
@@ -372,17 +364,24 @@ chmod 600 "$USER_HOME/.vimrc"
 
 announce "setting up default user directory"
 
-# install shell_extend for all users
-cp -rv "$USER_HOME/.shell_extend" /etc/skel/.
+# install shell-extend for all users
+cp -rv "$USER_HOME/shell-extend" /etc/skel/.
 
 # remove working tree
-rm -rf /etc/skel/.shell_extend/.git
+rm -rf /etc/skel/shell-extend/.git
 
 # update default .bashrc
-if [[ -f /etc/skel/.bashrc ]]; then echo -e "$EXTEND_SHELL"  >> /etc/skel/.bashrc; fi
+[[ -f /etc/skel/.bashrc ]] && cat << "EOF" >>  /etc/skel/.bashrc
+########################
+# SET SHELL EXTENSIONS #
+########################
+[[ -x "$HOME/shell-extend/extend" ]] && source "$HOME/shell-extend/extend"
+# enable pipx autocompletion
+eval "$(register-python-argcomplete pipx)"
+EOF
 
 # set default .vimrc
-if [[ ! -f /etc/skel/.vimrc ]]; then cp /etc/skel/.shell_extend/.vimrc_default /etc/skel/.vimrc; fi
+[[ ! -f /etc/skel/.vimrc ]] && cp /etc/skel/shell-extend/.vimrc /etc/skel/.vimrc
 
 # setup permissions
 chmod 600 /etc/skel/.vimrc
@@ -393,7 +392,7 @@ chmod 600 /etc/skel/.vimrc
 
 echo -e "installing multimedia tools"
 
-# install gifski
+# install gifski (v1.34 not available as a *.deb archive yet)
 wget -qO "$EXEC_PATH/gifski.deb" "https://github.com/ImageOptim/gifski/releases/download/1.33.0/gifski_1.33.0-1_$ARCH.deb" && dpkg -i "$EXEC_PATH/gifski.deb" || \
 echo "gifski: no build available for current architecture, skipping install"
 
@@ -401,8 +400,10 @@ echo "gifski: no build available for current architecture, skipping install"
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/gifmaker.sh"
 
 # setup gif maker and add alias to .bashrc
-# shellcheck disable=SC2016
-runuser -c 'echo '\''alias gif=$HOME/gifmaker.sh'\'' >> "$HOME/.bashrc"' -P --login "$USER_NAME"
+[[ -f "$USER_HOME/.bashrc" ]] && cat << "EOF" >> "$USER_HOME/.bashrc"
+# gifmaker alias
+alias gif="$HOME/gifmaker.sh"
+EOF
 
 ##############################################################
 #                         SETUP NODE.JS                      #
@@ -414,7 +415,7 @@ announce "installing node.js"
 runuser -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash' -P --login "$USER_NAME"
 
 # install + setup node and npm (load nvm since runuser won't execute .bashrc)
-runuser -c '. .nvm/nvm.sh && nvm install --lts --default --latest-npm' -P --login "$USER_NAME"
+runuser -c 'source .nvm/nvm.sh && nvm install --lts --default --latest-npm' -P --login "$USER_NAME"
 
 # decrypt and uncompress config file into user home directory
 gpg --decrypt --batch --passphrase "$TAR_PASSWD" "$GPG_TARBALL" | tar -C "$USER_HOME" --strip-components=1 -xvf /dev/stdin "tarball/.npmrc"
@@ -426,16 +427,14 @@ chown "$USER_NAME:$USER_NAME" "$USER_HOME/.npmrc"
 chmod 600 "$USER_HOME/.npmrc"
 
 # global modules management
-# shellcheck disable=SC2016
-GLOBAL_MODULES_PATH='
+[[ -f "$USER_HOME/.bashrc" ]] && cat << "EOF" >> "$USER_HOME/.bashrc"
 # export npm global modules path
-export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"'
-
-if [[ -f "$USER_HOME/.bashrc" ]]; then echo -e "$GLOBAL_MODULES_PATH" >> "$USER_HOME/.bashrc"; fi
+export NODE_PATH="$(realpath $NVM_INC/../../lib/node_modules)"
+EOF
 
 # install global modules and create symlink to folder
 # shellcheck disable=SC2016
-runuser -c '. .nvm/nvm.sh && \
+runuser -c 'source .nvm/nvm.sh && \
 npm install -g degit npm-check-updates js-beautify && \
 ln -s $(realpath $NVM_INC/../../lib/node_modules) ~/node.globals' -P --login "$USER_NAME"
 
@@ -471,7 +470,7 @@ announce "removing installation files"
 
 # uninstall irrelevant packages
 # shellcheck disable=SC2086
-apt-get purge -y $PURGE && apt-get autoremove -y
+apt-get purge -y $PURGE && apt-get autopurge -y
 
 # end message
 ENDMSG="installation complete.\ndon't forget to complete the following post-installation steps :\n$USER_POSTINSTALL"
